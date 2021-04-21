@@ -8,7 +8,8 @@ const handleReadFile = R.pipe(
     R.pipe(
       R.replace(/.*\//,''),
       R.replace(/\..*$/,''),
-      R.concat(R.__, '  ')
+      R.concat('date|'),
+      R.concat(R.__, '\n')
     ),
     R.pipe(
       readFileSync,
@@ -17,11 +18,23 @@ const handleReadFile = R.pipe(
   ])
 )
 
+const extractPriceFromFile = R.pipe(
+  handleReadFile,
+  R.split('\n'),
+  R.dropLast(1),
+  R.map(R.pipe(
+    R.split('|'),
+    R.view(R.lensIndex(1))
+  )),
+  R.converge(R.map, [
+    R.pipe(R.head, R.objOf),
+    R.tail
+  ])
+)
+
 R.pipe(
-  R.map(handleReadFile),
-  R.map(R.split('\n')),
-  R.map(R.dropLast(1)),
-  R.map(R.map(R.split('  '))),
-  R.map(R.map(R.take(3))),
+  R.map(extractPriceFromFile),
+  R.transpose,
+  R.map(R.mergeAll),
   console.log
 )(['../input/eth.csv', '../input/btc.csv'])
